@@ -1,0 +1,65 @@
+# 원핫인코딩 다시 하기
+
+# 답안 제출 예시
+# 수험번호.csv 생성
+# DataFrame.to_csv("0000.csv", index=False)
+
+# =========================================== 1) 데이터 로드
+import pandas as pd
+X_train = pd.read_csv('data/X_train.csv')
+y_train = pd.read_csv('data/y_train.csv')
+X_test = pd.read_csv('data/X_test.csv')
+
+# =========================================== 2) 전처리 - 1.결측치 처리
+def process_null(data):
+	data.fillna(0, inplace=True)
+#print(X_train.isnull().sum())
+
+# =========================================== 2) 전처리 - 2.스케일링 (6개 컬럼)
+from sklearn.preprocessing import StandardScaler
+def process_scaling(data):
+	# print(data.dtypes)
+	
+	data_scale = data[['총구매액', '최대구매액', '환불금액', '내점당구매건수', '주말방문비율', '구매주기']]
+	scaler = StandardScaler().fit(data_scale[:])
+	data_scaled = pd.DataFrame(scaler.transform(data_scale[:]), columns=['총구매액', '최대구매액', '환불금액', '내점당구매건수', '주말방문비율', '구매주기'])
+	# print(data_scaled)
+	
+	return data_scaled
+
+# =========================================== 2) 전처리 - 3.원핫인코딩(2개컬럼 -> 66개 컬럼)
+def process_encoding(data):
+	# print(data['주구매상품'].value_counts())
+	# print(pd.get_dummies(data['주구매상품']))
+	data_encoded = pd.get_dummies(data[['주구매상품', '주구매지점']])
+	# print(data_encoded.shape)
+	
+	return data_encoded
+
+# =========================================== 2) 전처리 - 4.완성
+def process_finish(data_scaled, data_encoded):
+	data_pre = pd.concat([data_scaled, data_encoded], axis=1)
+	# print(data_pre.shape)
+	
+	return data_pre
+
+def preprocess(data):
+	process_null(data)
+	data_scaled = process_scaling(data)
+	data_encoded = process_encoding(data)
+	data_pre = process_finish(data_scaled, data_encoded)
+	return data_pre
+
+X_train_pre = preprocess(X_train)
+X_test_pre = preprocess(X_test)
+print(X_train_pre.keys())
+print(X_test_pre.keys())
+
+# =========================================== 3) 모델링 - 1.결정트리
+from sklearn.tree import DecisionTreeClassifier
+dt_clf = DecisionTreeClassifier()
+
+# dt_clf.fit(X_train_pre, y_train['gender'])
+# preds = dt_clf.predict(X_test_pre)
+
+# print(preds.shape)

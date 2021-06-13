@@ -1,0 +1,9 @@
+import pandas as pd
+mtcars = pd.read_csv('data/mtcars.csv')
+
+from sklearn.preprocessing import MinMaxScaler
+scaler = MinMaxScaler()
+qsec_scaled = scaler.fit_transform(mtcars[['qsec']])
+
+answer_ndarray = qsec_scaled[qsec_scaled>0.5]
+print(answer_ndarray.shape[0])
