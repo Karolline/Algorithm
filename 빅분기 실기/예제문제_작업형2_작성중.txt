@@ -1,5 +1,3 @@
-# 원핫인코딩 다시 하기
-
 # 답안 제출 예시
 # 수험번호.csv 생성
 # DataFrame.to_csv("0000.csv", index=False)
@@ -27,12 +25,13 @@ def process_scaling(data):
 	
 	return data_scaled
 
-# =========================================== 2) 전처리 - 3.원핫인코딩(2개컬럼 -> 66개 컬럼)
+# =========================================== 2) 전처리 - 3.레이블인코딩 (LabelEncoder ()는 1 차원 배열 만 인수로 사용 합니다.)
+from sklearn.preprocessing import LabelEncoder
 def process_encoding(data):
-	# print(data['주구매상품'].value_counts())
-	# print(pd.get_dummies(data['주구매상품']))
-	data_encoded = pd.get_dummies(data[['주구매상품', '주구매지점']])
-	# print(data_encoded.shape)
+	data_encoded1 = pd.DataFrame(LabelEncoder().fit_transform(data['주구매상품']), columns=['주구매상품'])
+	data_encoded2 = pd.DataFrame(LabelEncoder().fit_transform(data['주구매지점']), columns=['주구매지점'])
+	
+	data_encoded = pd.concat([data_encoded1, data_encoded2], axis=1)
 	
 	return data_encoded
 
@@ -52,8 +51,8 @@ def preprocess(data):
 
 X_train_pre = preprocess(X_train)
 X_test_pre = preprocess(X_test)
-print(X_train_pre.keys())
-print(X_test_pre.keys())
+print(X_train_pre.shape)
+print(X_test_pre.shape)
 
 # =========================================== 3) 모델링 - 1.결정트리
 from sklearn.tree import DecisionTreeClassifier
