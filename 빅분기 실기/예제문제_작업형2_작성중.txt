@@ -2,11 +2,14 @@
 # 수험번호.csv 생성
 # DataFrame.to_csv("0000.csv", index=False)
 
+import warnings
+warnings.filterwarnings(action='ignore', category=UserWarning)
+
 # =========================================== 1) 데이터 로드
 import pandas as pd
 X_train = pd.read_csv('data/X_train.csv')
 y_train = pd.read_csv('data/y_train.csv')
-X_test = pd.read_csv('data/X_test.csv')
+X_submit = pd.read_csv('data/X_test.csv')
 
 # =========================================== 2) 전처리 - 1.결측치 처리
 def process_null(data):
@@ -18,9 +21,9 @@ from sklearn.preprocessing import StandardScaler
 def process_scaling(data):
 	# print(data.dtypes)
 	
-	data_scale = data[['총구매액', '최대구매액', '환불금액', '내점당구매건수', '주말방문비율', '구매주기']]
+	data_scale = data[['총구매액', '최대구매액', '환불금액', '내점일수', '내점당구매건수', '주말방문비율', '구매주기']]
 	scaler = StandardScaler().fit(data_scale[:])
-	data_scaled = pd.DataFrame(scaler.transform(data_scale[:]), columns=['총구매액', '최대구매액', '환불금액', '내점당구매건수', '주말방문비율', '구매주기'])
+	data_scaled = pd.DataFrame(scaler.transform(data_scale[:]), columns=['총구매액', '최대구매액', '환불금액', '내점일수', '내점당구매건수', '주말방문비율', '구매주기'])
 	# print(data_scaled)
 	
 	return data_scaled
@@ -50,15 +53,48 @@ def preprocess(data):
 	return data_pre
 
 X_train_pre = preprocess(X_train)
-X_test_pre = preprocess(X_test)
-print(X_train_pre.shape)
-print(X_test_pre.shape)
+X_submit_pre = preprocess(X_submit)
+# print(X_train_pre.shape)
+# print(X_test_pre.shape)
 
-# =========================================== 3) 모델링 - 1.결정트리
-from sklearn.tree import DecisionTreeClassifier
-dt_clf = DecisionTreeClassifier()
+from sklearn.model_selection import train_test_split
+X_train, X_test, y_train, y_test = train_test_split(X_train_pre, y_train['gender'])
+# print(X_train.shape)
+# print(y_train.shape)
+# print(X_test.shape)
+# print(y_test.shape)
 
-# dt_clf.fit(X_train_pre, y_train['gender'])
-# preds = dt_clf.predict(X_test_pre)
+# =========================================== 3) 검증 - 모델 결정
+from xgboost import XGBClassifier
 
-# print(preds.shape)
+# from sklearn.model_selection import GridSearchCV
+# param_grid = {
+# 	'n_estimators': [10,20],
+# 	'learning_rate': [0.1],
+# 	'max_depth': [5]
+# }
+
+# grid_search = GridSearchCV(xgb_clf, param_grid, scoring="accuracy", verbose=1)
+# grid_search.fit(X_train_pre, y_train['gender'])
+
+# print("==============================")
+# print(grid_search.best_params_)
+# print(grid_search.best_score_)
+# print("==============================")
+
+
+xgb_clf = XGBClassifier(n_estimators=20, learning_rate=0.1, max_depth=10, use_label_encoder=False)
+xgb_clf.fit(X_train, y_train, early_stopping_rounds=400,
+						eval_set=[(X_test, y_test)], eval_metric="logloss", verbose=True)
+
+# =========================================== 4) 평가
+# from sklearn.metrics import roc_auc_score
+# preds = xgb_clf.predict(X_test)
+# print(roc_auc_score(preds, y_test))
+
+# =========================================== 5) 결과 제출
+preds = pd.DataFrame(xgb_clf.predict_proba(X_submit_pre)[:,1])
+result = pd.concat([X_submit['cust_id'], preds], axis=1)
+# print(result.head())
+
+result.to_csv('0123.csv', mode='w')
